@@ -52,7 +52,7 @@ pipeline {
             nexusArtifactUploader(
                 nexusVersion: 'nexus3',
                 protocol: 'http',
-                nexusUrl: 'http://localhost:8081',
+                nexusUrl: 'http://localhost:6060',
                 groupId: 'com.example',
                 artifactId: 'miimagen',
                 version: '1.0',
