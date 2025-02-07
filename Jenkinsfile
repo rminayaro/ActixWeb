@@ -36,20 +36,43 @@ pipeline {
         }
 
 
-        stage('Subir a Nexus') {
-    steps {
-        script {
-            // Inicia sesión en Docker con tu usuario y contraseña utilizando --password-stdin
-            bat "echo Minaya022005 | docker login -u rminayaro --password-stdin http://localhost:6060"
+ stages {
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Construir la imagen Docker
+                    sh 'docker build -t mi_proyecto_dockerizado-actix_web_api:latest .'
+                }
+            }
+        }
 
-            // Etiqueta la imagen Docker con el repositorio de Nexus
-            bat "docker tag mi_proyecto_dockerizado-actix_web_api:latest localhost:6060/repository/rminaya/miimagen:1.0"
+        stage('Login to Nexus Docker Repository') {
+            steps {
+                script {
+                    // Inicia sesión en el repositorio Docker de Nexus usando Docker CLI
+                    sh 'echo "Minaya022005" | docker login -u rminayaro --password-stdin http://localhost:8081/repository/rminaya/'
+                }
+            }
+        }
 
-            // Empuja la imagen Docker al repositorio de Nexus
-            bat "docker push localhost:6060/repository/rminaya/miimagen:1.0"
+        stage('Tag Docker Image') {
+            steps {
+                script {
+                    // Etiquetar la imagen Docker para el repositorio Nexus
+                    sh 'docker tag mi_proyecto_dockerizado-actix_web_api:latest localhost:8081/repository/rminaya/miimagen:1.0'
+                }
+            }
+        }
+
+        stage('Push Docker Image to Nexus') {
+            steps {
+                script {
+                    // Empujar la imagen Docker a Nexus
+                    sh 'docker push localhost:8081/repository/rminaya/miimagen:1.0'
+                }
+            }
         }
     }
-}
 
 
 
