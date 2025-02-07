@@ -37,23 +37,34 @@ pipeline {
 
 
         stage('Subir a Nexus') {
-            steps {
-                script {
-                    nexusArtifactUploader(
-                        nexusVersion: 'nexus3',
-                        protocol: 'http',
-                        nexusUrl: 'http://localhost:8081',
-                        groupId: 'com.example',
-                        artifactId: 'tuimagen',
-                        version: '1.0',
-                        repository: 'docker-releases',
-                        credentialsId: 'nexus-credenciales',
-                        extension: 'tar',
-                        file: "tuimagen.tar"
-                    )
-                }
-            }
+    steps {
+        script {
+            // Inicia sesión en Docker con tu usuario y contraseña
+            bat "docker login -u rminayaro -p Minaya022005 http://localhost:8081"
+
+            // Etiqueta la imagen Docker con el repositorio de Nexus
+            bat "docker tag mi_proyecto_dockerizado-actix_web_api:latest localhost:8081/docker-releases/miimagen:1.0"
+
+            // Empuja la imagen Docker al repositorio de Nexus
+            bat "docker push localhost:8081/docker-releases/miimagen:1.0"
+
+            // Usando nexusArtifactUploader para subir el archivo .tar
+            nexusArtifactUploader(
+                nexusVersion: 'nexus3',
+                protocol: 'http',
+                nexusUrl: 'http://localhost:8081',
+                groupId: 'com.example',
+                artifactId: 'miimagen',
+                version: '1.0',
+                repository: 'docker-releases',
+                credentialsId: 'nexus-credenciales',
+                extension: 'tar',
+                file: "tuimagen.tar"
+            )
         }
+    }
+}
+
 
         stage('Desplegar en Servidor') {
             when {
