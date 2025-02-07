@@ -15,6 +15,17 @@ pipeline {
             }
         }
 
+        stage('Verificar Cargo.lock') {
+            steps {
+                // Verificamos que Cargo.lock esté presente en el directorio del repositorio
+                script {
+                    // Listar archivos en el directorio actual para verificar Cargo.lock
+                    echo "Listando archivos en el directorio actual..."
+                    bat 'dir'
+                }
+            }
+        }
+
         stage('Construir Imagen Docker') {
             steps {
                 script {
@@ -23,6 +34,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Subir a Nexus') {
             steps {
