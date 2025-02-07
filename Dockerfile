@@ -5,7 +5,7 @@ FROM rust:1.75 as builder
 WORKDIR /usr/src/app
 
 # Copia el archivo Cargo.toml y Cargo.lock y descarga dependencias
-COPY Cargo.toml ./ Cargo.lock /usr/src/app/
+COPY ./path/to/Cargo.toml ./path/to/Cargo.lock /usr/src/app/
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release && rm -rf src
 
