@@ -40,27 +40,13 @@ pipeline {
     steps {
         script {
             // Inicia sesión en Docker con tu usuario y contraseña utilizando --password-stdin
-            bat "echo Minaya022005 | docker login -u rminayaro --password-stdin http://localhost:8081"
+            bat "echo Minaya022005 | docker login -u rminayaro --password-stdin http://localhost:6060"
 
             // Etiqueta la imagen Docker con el repositorio de Nexus
-            bat "docker tag mi_proyecto_dockerizado-actix_web_api:latest http://localhost:8081/repository/rminaya/miimagen:1.0"
+            bat "docker tag mi_proyecto_dockerizado-actix_web_api:latest localhost:6060/repository/rminaya/miimagen:1.0"
 
             // Empuja la imagen Docker al repositorio de Nexus
-            bat "docker push http://localhost:8081/repository/rminaya/miimagen:1.0"
-
-            // Usando nexusArtifactUploader para subir el archivo .tar (si es necesario)
-            nexusArtifactUploader(
-                nexusVersion: 'nexus3',
-                protocol: 'http',
-                nexusUrl: 'http://localhost:6060',
-                groupId: 'com.example',
-                artifactId: 'miimagen',
-                version: '1.0',
-                repository: 'rminaya',
-                credentialsId: 'nexus-credenciales',
-                extension: 'tar',
-                file: "tuimagen.tar"
-            )
+            bat "docker push localhost:6060/repository/rminaya/miimagen:1.0"
         }
     }
 }
