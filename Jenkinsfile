@@ -82,7 +82,7 @@ pipeline {
             }
             steps {
                 bat 'echo "Desplegando en el servidor..."'
-                // Aquí puedes agregar comandos para desplegar la imagen Docker en tu servidor
+                // Aquí puedes agregar comandos para desplegar la imagen Dockerss en tu servidor
             }
         }
     }
