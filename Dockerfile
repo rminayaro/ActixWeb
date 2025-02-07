@@ -1,31 +1,22 @@
-# Usa la imagen oficial de Rust como base
-FROM rust:1.75 as builder
+# Etapa 1: Construcción
+FROM rust:latest as builder
 
-# Establece el directorio de trabajo dentro del contenedor
 WORKDIR /usr/src/app
-
-# Copia el archivo Cargo.toml y Cargo.lock y descarga dependencias
-COPY ./path/to/Cargo.toml ./path/to/Cargo.lock /usr/src/app/
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release && rm -rf src
-
-# Copia el resto del código fuente
 COPY . .
 
-# Compila la aplicación en modo release
-RUN cargo build --release
+# Instalar dependencias para compilar correctamente con OpenSSL
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && cargo build --release
 
-# Segunda etapa: imagen más liviana con solo el binario
-FROM debian:bullseye-slim
-
-# Establece el directorio de trabajo
+# Etapa 2: Imagen final con dependencias mínimas
+FROM debian:latest
 WORKDIR /usr/src/app
 
-# Copia el binario compilado desde la primera imagen
-COPY --from=builder /usr/src/app/target/release/tu_aplicacion ./actix_backend
+# Instalar OpenSSL en la imagen final
+RUN apt-get update && apt-get install -y libssl3 ca-certificates
 
-# Exponer el puerto en el que corre Actix
+# Copiar el binario desde la etapa de construcción
+COPY --from=builder /usr/src/app/target/release/actix_web_api .
+
+# Exponer el puerto y ejecutar
 EXPOSE 8080
-
-# Comando para ejecutar la aplicación
-CMD ["./actix_backend"]
+CMD ["./actix_web_api"]
