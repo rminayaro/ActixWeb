@@ -22,19 +22,19 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "🔨 Construyendo imagen Docker..."
-                bat "docker build -t %DOCKER_REGISTRY%/%DOCKER_IMAGE%:%DOCKER_TAG% ."
+                sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} ."
             }
         }
         stage('Login to Nexus') {
             steps {
                 echo "🔑 Iniciando sesión en Nexus..."
-                bat "docker login -u %NEXUS_USER% -p \"%NEXUS_PASSWORD%\" %DOCKER_REGISTRY%"
+                sh "docker login -u ${NEXUS_USER} -p '${NEXUS_PASSWORD}' ${DOCKER_REGISTRY}"
             }
         }
         stage('Push to Nexus') {
             steps {
                 echo "📤 Subiendo imagen a Nexus..."
-                bat "docker push %DOCKER_REGISTRY%/%DOCKER_IMAGE%:%DOCKER_TAG%"
+                sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"
             }
         }
         stage('Deploy to Server') {
@@ -42,13 +42,13 @@ pipeline {
                 echo "🚀 Desplegando aplicación en el servidor..."
                 script {
                     sshagent(credentials: [SSH_CREDENTIALS]) {
-                        bat """
-                        ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << 'ENDSSH'
-                        docker pull $DOCKER_REGISTRY/$DOCKER_IMAGE:$DOCKER_TAG
-                        docker stop $DOCKER_IMAGE || true
-                        docker rm -f $DOCKER_IMAGE || true
-                        docker run -d --restart unless-stopped --name $DOCKER_IMAGE -p 8080:8080 \\
-                        $DOCKER_REGISTRY/$DOCKER_IMAGE:$DOCKER_TAG
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} << 'ENDSSH'
+                        docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker stop ${DOCKER_IMAGE} || true
+                        docker rm -f ${DOCKER_IMAGE} || true
+                        docker run -d --restart unless-stopped --name ${DOCKER_IMAGE} -p 8080:8080 \\
+                        ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}
                         exit
                         ENDSSH
                         """
