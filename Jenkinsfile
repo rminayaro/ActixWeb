@@ -38,25 +38,24 @@ pipeline {
             }
         }
         stage('Deploy to Server') {
-            steps {
-                echo "🚀 Desplegando aplicación en el servidor..."
-                script {
-                    sshagent(credentials: [SSH_CREDENTIALS]) {
-                        sh """
-                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} << 'ENDSSH'
-                        docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}
-                        docker stop ${DOCKER_IMAGE} || true
-                        docker rm -f ${DOCKER_IMAGE} || true
-                        docker run -d --restart unless-stopped --name ${DOCKER_IMAGE} -p 8080:8080 \\
-                        ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}
-                        exit
-                        ENDSSH
-                        """
-                    }
-                }
-            }
+    steps {
+        echo "🚀 Desplegando aplicación en el servidor..."
+        script {
+            // Ejecutar comandos SSH con autenticación por contraseña utilizando sshpass
+            sh """
+            sshpass -p '${SERVER_PASSWORD}' ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} << 'ENDSSH'
+            docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}
+            docker stop ${DOCKER_IMAGE} || true
+            docker rm -f ${DOCKER_IMAGE} || true
+            docker run -d --restart unless-stopped --name ${DOCKER_IMAGE} -p 8080:8080 \\
+            ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}
+            exit
+            ENDSSH
+            """
         }
     }
+}
+
     post {
         success {
             echo "🎉 Despliegue exitoso de Rust API!"
