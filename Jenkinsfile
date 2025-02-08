@@ -1,75 +1,64 @@
 pipeline {
     agent any
-
+    environment {
+        DOCKER_REGISTRY = "64.23.161.84:8082"
+        DOCKER_IMAGE = "actix_web_api"
+        DOCKER_TAG = "latest"
+        SERVER_USER = "root"
+        SERVER_IP = "64.23.161.84"
+        SSH_CREDENTIALS = "ssh-server-credentials"
+    }
     stages {
-        stage('Descargar Código') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/rminayaro/ActixWeb.git'
+                echo "📥 Clonando código fuente desde GitHub..."
+                git branch: 'develop', credentialsId: 'github-credentials', url: 'https://github.com/rminayaro/ActixWeb.git'
             }
         }
-
-        stage('Construir y Probar') {
+        stage('Build Docker Image') {
             steps {
-                bat 'echo "Compilando código..."'
-                bat 'echo "Ejecutando pruebas..."'
+                echo "🔨 Construyendo imagen Docker..."
+                sh "docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$DOCKER_TAG ."
             }
         }
-
-        stage('Verificar Cargo.lock') {
+        stage('Login to Nexus') {
             steps {
+                echo "🔑 Iniciando sesión en Nexus..."
+                sh "docker login -u admin -p '123456' $DOCKER_REGISTRY"
+            }
+        }
+        stage('Push to Nexus') {
+            steps {
+                echo "📤 Subiendo imagen a Nexus..."
+                sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$DOCKER_TAG"
+            }
+        }
+        stage('Deploy to Server') {
+            steps {
+                echo "🚀 Desplegando aplicación en el servidor..."
                 script {
-                    echo "Listando archivos en el directorio actual..."
-                    bat 'dir'
+                    sshagent(credentials: [SSH_CREDENTIALS]) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << 'ENDSSH'
+                        docker pull $DOCKER_REGISTRY/$DOCKER_IMAGE:$DOCKER_TAG
+                        docker stop $DOCKER_IMAGE || true
+                        docker rm -f $DOCKER_IMAGE || true
+                        docker run -d --restart unless-stopped --name $DOCKER_IMAGE -p 8080:8080 \
+                        $DOCKER_REGISTRY/$DOCKER_IMAGE:$DOCKER_TAG
+                        exit
+                        ENDSSH
+                        """
+                    }
                 }
             }
         }
-
-        stage('Construir Imagen Docker') {
-            steps {
-                script {
-                    bat 'docker build -t tuusuario/tuimagen:version .'
-                    bat 'docker save -o tuimagen.tar tuusuario/tuimagen:version'  // Guardar la imagen en un archivo
-                }
-            }
+    }
+    post {
+        success {
+            echo "🎉 Despliegue exitoso de Rust API!"
         }
-
-        stage('Subir a Nexus') {
-            steps {
-                script {
-                    // Inicia sesión en Docker con tu usuario y contraseña utilizando --password-stdin
-                    bat "echo Minaya02205 | docker login -u rminayaro --password-stdin http://localhost:8081"
-
-                    // Etiqueta la imagen Docker con el repositorio de Nexus
-                    bat "docker tag tuusuario/tuimagen:version localhost:8081/repository/rminaya/miimagen:1.0"
-
-                    // Empuja la imagen Docker al repositorio de Nexus
-                    bat "docker push localhost:8081/repository/rminaya/miimagen:1.0"
-
-                    // Usando nexusArtifactUploader para subir el archivo .tar (si es necesario)
-                    nexusArtifactUploader(
-                        nexusVersion: 'nexus3',
-                        protocol: 'http',
-                        nexusUrl: 'http://localhost:8081',
-                        groupId: 'com.example',
-                        artifactId: 'miimagen',
-                        version: '1.0',
-                        repository: 'rminaya',
-                        credentialsId: 'nexus-credenciales',
-                        extension: 'tar',
-                        file: "tuimagen.tar"
-                    )
-                }
-            }
-        }
-
-        stage('Desplegar en Servidor') {
-            when {
-                branch 'main'
-            }
-            steps {
-                bat 'echo "Desplegando en el servidor..."'
-                // Aquí puedes agregar comandos para desplegar la imagen Docker en tu servidor
-            }
+        failure {
+            echo "🚨 ERROR en el despliegue!"
         }
     }
 }
